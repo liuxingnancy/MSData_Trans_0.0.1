@@ -119,7 +119,7 @@ public class msGUI {
 		thirdtxt = new JTextField();
 		thirdtxt.setForeground(Color.LIGHT_GRAY);
 		thirdtxt.setFont(new Font("Tahoma", Font.PLAIN, 14));
-		thirdtxt.setText("E:\\process\\MSData\\Machine_number");
+		thirdtxt.setText("E:\\process\\MSData\\Machine_number\\");
 		thirdtxt.setColumns(10);
 		thirdtxt.addKeyListener(new KeyAdapter() {
 			public void keyTyped(KeyEvent e) {
@@ -341,6 +341,7 @@ public class msGUI {
 		String season = localfile.getName();
 		String year = localfile.getParentFile().getName();
 		File remotefile = new File(remotedir + "\\" + year + "\\" + season);
+		File processfile = new File(processdir + "\\" + year + "\\" + season);
 		
 		if (!remotefile.exists()) {
 			remotefile.mkdirs();
@@ -352,7 +353,6 @@ public class msGUI {
 			}
 		}
 		
-		File processfile = new File(processdir);
 		long scantimeout = Long.parseLong(scantxt.getText());
 		long refreshtimeout = Long.parseLong(refreshtxt.getText());
 		monitor = new FileMonitor(localfile, remotefile, processfile, scantimeout, refreshtimeout, logtxt);

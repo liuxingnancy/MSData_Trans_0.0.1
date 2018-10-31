@@ -31,7 +31,6 @@ public class FileMonitor {
 	private FileAlterationMonitor filemonitor;
 	private JTextPane logtxt;
 	private SimpleDateFormat df = new SimpleDateFormat("YYYY-MM-dd HH:mm:ss");
-	private FileFactory filefactory;
 	
 	
 	public FileMonitor(String localfile, String remotefile, String processingfile, long monitortimeout, long fileChangeCheckTimeout, JTextPane logtxt) {
@@ -47,15 +46,14 @@ public class FileMonitor {
 		this.logtxt = logtxt;
 		this.processingfilefilter = new RAWDataFileFilter();
 		this.filemonitor = new FileAlterationMonitor(this.monitortimeout*1000);
-		LocalFileListener filelistener = new LocalFileListener(this.remotefile, this.fileChangeCheckTimeout, this.logtxt);
+		LocalFileListener filelistener = new LocalFileListener(this.localfile, this.remotefile, this.fileChangeCheckTimeout, this.logtxt);
 		FileAlterationObserver fileobserver = new FileAlterationObserver(this.localfile, this.fileChangeCheckTimeout);
 		fileobserver.addListener(filelistener);
-		ProcessingFileListener processingfilelistener = new ProcessingFileListener(this.remotefile, this.fileChangeCheckTimeout, this.logtxt);
+		ProcessingFileListener processingfilelistener = new ProcessingFileListener(this.processingfile, this.remotefile, this.fileChangeCheckTimeout, this.logtxt);
 		FileAlterationObserver processingfileobserver = new FileAlterationObserver(this.processingfile, this.processingfilefilter, this.fileChangeCheckTimeout);
 		processingfileobserver.addListener(processingfilelistener);
 		this.filemonitor.addObserver(fileobserver);
 		this.filemonitor.addObserver(processingfileobserver);
-		this.filefactory = new FileFactory();
 	}
 	
 	public class QCfileFilter implements FileFilter {
@@ -91,22 +89,22 @@ public class FileMonitor {
 		localprojectfiles = listfiles(this.localfile, localprojectfiles, new projectFileFilter());
 
 		for (File lfile: localprojectfiles) {
-			File rfile = filefactory.getRemoteFile(lfile, this.remotefile, FileType.projectFile);
-			if (!filefactory.fileEqual(lfile, rfile)) {
+			File rfile = FileFactory.getRemoteFile(lfile, this.localfile, this.remotefile, FileType.projectFile);
+			if (!FileFactory.fileEqual(lfile, rfile)) {
 				if (rfile.exists()) {
-					filefactory.removeExsitsFile(rfile, logtxt);
+					FileFactory.removeExsitsFile(rfile, logtxt);
 				}
-				filefactory.copyFile(lfile, rfile, logtxt);
+				FileFactory.copyFile(lfile, rfile, logtxt);
 			}
 		}
 		
 		for (File qcfile : qcfiles) {
-			File remoteQCfile = filefactory.getRemoteFile(qcfile, this.remotefile, FileType.QCFile);
-			if (!filefactory.fileEqual(qcfile, remoteQCfile)) {
+			File remoteQCfile = FileFactory.getRemoteFile(qcfile, this.localfile, this.remotefile, FileType.QCFile);
+			if (!FileFactory.fileEqual(qcfile, remoteQCfile)) {
 				if (remoteQCfile.exists()) {
-					filefactory.removeExsitsFile(remoteQCfile, logtxt);
+					FileFactory.removeExsitsFile(remoteQCfile, logtxt);
 				}
-				filefactory.copyFile(qcfile, remoteQCfile, logtxt);
+				FileFactory.copyFile(qcfile, remoteQCfile, logtxt);
 			}
 		}
 	}
@@ -115,9 +113,9 @@ public class FileMonitor {
 		List<File> processfiles = new ArrayList<File>();
 		processfiles = listfiles(this.processingfile, processfiles, this.processingfilefilter);
 		for (File processfile : processfiles) {
-			File rfile = filefactory.getRemoteFile(processfile, this.remotefile, FileType.processFile);
-			if (!filefactory.fileEqual(processfile, rfile)) {
-				filefactory.copyFile(processfile, rfile, logtxt);
+			File rfile = FileFactory.getRemoteFile(processfile, this.processingfile, this.remotefile, FileType.processFile);
+			if (!FileFactory.fileEqual(processfile, rfile)) {
+				FileFactory.copyFile(processfile, rfile, logtxt);
 			}
 		}
 	}
@@ -130,14 +128,30 @@ public class FileMonitor {
 		} catch (BadLocationException e1) {
 			e1.printStackTrace();
 		}
-		checkLocal();
+		Runnable checkLocalRunnable = new Runnable() {
+			@Override
+			public void run() {
+				checkLocal();				
+			}			
+		};
+		Thread checkLocalThread = new Thread(checkLocalRunnable);
+		checkLocalThread.start();
+		
 		loginfo = df.format(new Date()) + " Check the processing directory and copy the new generated files ! \n";
 		try {
 			logtxt.getDocument().insertString(0, loginfo, logtxt.getStyle("blue"));
 		} catch (BadLocationException e1) {
 			e1.printStackTrace();
 		}
-		checkProcess();
+		Runnable checkProcessRunnable = new Runnable() {
+			@Override
+			public void run() {
+				checkProcess();
+			}
+		};
+		Thread checkProcessThread = new Thread(checkProcessRunnable);
+		checkProcessThread.start();
+		
 		try {
 			this.filemonitor.start();
 			loginfo = df.format(new Date()) +" File monitor start !\n";

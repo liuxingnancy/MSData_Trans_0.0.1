@@ -16,15 +16,16 @@ import monitor.FileEntry;
 
 public class LocalFileListener implements FileAlterationListener{
 	
+	private File localFile;
 	private File remoteFile;
 	private long timeout;
 	private JTextPane logtxt;
-	private FileFactory filefactory = new FileFactory();
 	
-	public LocalFileListener (String remoteFile, long timeout, JTextPane logtxt) {
-		this(new File(remoteFile), timeout, logtxt);
+	public LocalFileListener (String localFile, String remoteFile, long timeout, JTextPane logtxt) {
+		this(new File(localFile), new File(remoteFile), timeout, logtxt);
 	}
-	public LocalFileListener (File remoteFile, long timeout, JTextPane logtxt) {
+	public LocalFileListener (File localFile, File remoteFile, long timeout, JTextPane logtxt) {
+		this.localFile = localFile;
 		this.remoteFile = remoteFile;
 		this.timeout = timeout;
 		this.logtxt = logtxt;
@@ -48,42 +49,46 @@ public class LocalFileListener implements FileAlterationListener{
 	public void onFileChange(File file) {
 		String filepath = file.getAbsolutePath();
 		FileType filetype = filepath.contains("_QC")? FileType.QCFile : FileType.projectFile ;
-		File remotefile = filefactory.getRemoteFile(file, remoteFile, filetype);
+		File remotefile = FileFactory.getRemoteFile(file, localFile, remoteFile, filetype);
 		FileEntry fileEntry = new FileEntry(file);
 		fileEntry.refresh(file);
 		
 		if (remotefile.exists()) {
-			filefactory.removeExsitsFile(remotefile, logtxt);
-		}
-		while (true) {
-			if (!fileEntry.refresh(file, timeout)) {
-				if (! remotefile.getParentFile().exists()){
-					remotefile.getParentFile().mkdirs();
+			FileFactory.removeExsitsFile(remotefile, logtxt);
+			while (true) {
+				if(!fileEntry.refresh(file, timeout)) {
+					FileFactory.copyFile(file, remotefile, logtxt);
+					break;
 				}
-				filefactory.copyFile(file, remotefile, logtxt);
 			}
-			break;
 		}
+		
 	}
 
 	@Override
 	public void onFileCreate(File file) {
 		String filepath = file.getAbsolutePath();
 		FileType filetype = filepath.contains("_QC")? FileType.QCFile : FileType.projectFile ;
-		File remotefile = filefactory.getRemoteFile(file, remoteFile, filetype);
+		File remotefile = FileFactory.getRemoteFile(file, localFile, remoteFile, filetype);
 		FileEntry fileEntry = new FileEntry(file);
 		fileEntry.refresh(file);
 		
 		if (remotefile.exists()) {
-			filefactory.removeExsitsFile(remotefile, logtxt);
+			FileFactory.removeExsitsFile(remotefile, logtxt);
 		}
-		
-		while (true) {
-			if (!fileEntry.refresh(file, timeout)){
-				filefactory.copyFile(file, remotefile, logtxt);
-				break;
+		Runnable copyRunnable = new Runnable() {
+			@Override
+			public void run() {
+				while (true) {
+					if (!fileEntry.refresh(file, timeout)) {
+						FileFactory.copyFile(file, remotefile, logtxt);
+						break;
+					}
+				}
 			}
-		}
+		};
+		Thread copyThread = new Thread(copyRunnable);
+		copyThread.run();
 			
 	}
 

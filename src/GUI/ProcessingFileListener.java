@@ -16,15 +16,16 @@ import monitor.FileEntry;
 
 public class ProcessingFileListener implements FileAlterationListener {
 	
+	private File processFile;
 	private File remoteFile;
 	private long timeout;
 	private JTextPane logtxt;
-	private FileFactory filefactory = new FileFactory();
 
-	public ProcessingFileListener (String remoteFile, long timeout, JTextPane logtxt) {
-		this(new File(remoteFile), timeout, logtxt);
+	public ProcessingFileListener (String processFile, String remoteFile, long timeout, JTextPane logtxt) {
+		this(new File(processFile), new File(remoteFile), timeout, logtxt);
 	}
-	public ProcessingFileListener (File remoteFile, long timeout, JTextPane logtxt) {
+	public ProcessingFileListener (File processFile, File remoteFile, long timeout, JTextPane logtxt) {
+		this.processFile = processFile;
 		this.remoteFile = remoteFile;
 		this.timeout = timeout;
 		this.logtxt = logtxt;
@@ -52,29 +53,37 @@ public class ProcessingFileListener implements FileAlterationListener {
 	}
 	@Override
 	public void onFileCreate(File file) {
-		File remotefile = filefactory.getRemoteFile(file, this.remoteFile, FileType.processFile);
+		File remotefile = FileFactory.getRemoteFile(file, this.processFile, this.remoteFile, FileType.processFile);
 		FileEntry fileEntry = new FileEntry(file);
 		fileEntry.refresh(file);
-		while (true) {
-			if (!fileEntry.refresh(file, this.timeout)) {
-				filefactory.copyFile(file, remotefile, logtxt);
-				break;
+		Runnable copyRunnable = new Runnable() {
+			@Override
+			public void run() {
+				while (true) {
+					if (!fileEntry.refresh(file, timeout)) {
+						FileFactory.copyFile(file, remotefile, logtxt);
+						break;
+					}
+				}
 			}
-		}
-		
+		};
+		Thread copyThread = new Thread(copyRunnable);
+		copyThread.run();
 	}
 	@Override
 	public void onFileChange(File file) {
-		File remotefile = filefactory.getRemoteFile(file, this.remoteFile, FileType.processFile);
+		File remotefile = FileFactory.getRemoteFile(file, this.processFile, this.remoteFile, FileType.processFile);
 		FileEntry fileEntry = new FileEntry(file);
 		fileEntry.refresh(file);
-		while (true) {
-			if (!fileEntry.refresh(file, this.timeout)) {
-				filefactory.copyFile(file, remotefile, logtxt);
-				break;
-			}
-		}
 		
+		if (remotefile.exists()) {
+			while (true) {
+				if (!fileEntry.refresh(file, this.timeout)) {
+					FileFactory.copyFile(file, remotefile, logtxt);
+					break;
+				}
+			}
+		}		
 	}
 	@Override
 	public void onFileDelete(File file) {

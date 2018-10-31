@@ -22,8 +22,12 @@ import org.apache.commons.io.FileUtils;
  */
 
 public class FileFactory {
+	
+	private FileFactory() {
+		
+	}
 
-	public boolean fileEqual(File file1, File file2) {
+	public static boolean fileEqual(File file1, File file2) {
 		boolean equal = true;
 		if (!file1.exists() || !file2.exists()) {
 			equal = false;
@@ -36,16 +40,8 @@ public class FileFactory {
 		return equal;
 	}
 	
-	public void copyFile(File localfile, File remotefile, JTextPane logtxt) {
-		SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-		String loginfo;
-
-		loginfo = df.format(new Date()) + " Copy the new file: " + localfile.getAbsolutePath() + "\n";
-		try {
-			logtxt.getDocument().insertString(0, loginfo, logtxt.getStyle("normal"));
-		} catch (BadLocationException e) {
-			e.printStackTrace();
-		}
+	public static void copyFile(File localfile, File remotefile, JTextPane logtxt) {
+	
 		try {
 			FileUtils.copyFile(localfile, remotefile);
 		} catch (IOException e) {
@@ -55,7 +51,7 @@ public class FileFactory {
 	}
 	
 	
-	public void verifyCopy(File localfile, File remotefile, JTextPane logtxt) {
+	public static void verifyCopy(File localfile, File remotefile, JTextPane logtxt) {
 		
 		SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 		String loginfo="";
@@ -63,7 +59,7 @@ public class FileFactory {
 		boolean copysuccess = fileEqual(localfile, remotefile);
 		int times=0;
 		if(copysuccess) {
-			loginfo = df.format(new Date()) + " Copy succeed! \n";
+			loginfo = df.format(new Date()) + " Copy succeessfully! Copy the new file: " + localfile.getAbsolutePath() + "\n";
 			try {
 				logtxt.getDocument().insertString(0, loginfo, logtxt.getStyle("normal"));
 			} catch (BadLocationException e) {
@@ -96,7 +92,7 @@ public class FileFactory {
 		}
 	}
 	
-	public void removeExsitsFile(File remotefile, JTextPane logtxt) {
+	public static void removeExsitsFile(File remotefile, JTextPane logtxt) {
 		
 		SimpleDateFormat fdf = new SimpleDateFormat("YYYYMMdd");
 		SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
@@ -136,7 +132,7 @@ public class FileFactory {
 							
 	}
 	
-	public String getNewFilePath(File file) {
+	public static String getNewFilePath(File file) {
 		String filename = file.getName();
 		File[] filelist = file.getParentFile().listFiles(new FileFilter() {
 			public boolean accept(File listfile) {
@@ -149,7 +145,7 @@ public class FileFactory {
 		return file.getParent() + "\\" + newfilename;
 	}
 	
-	public File getRemoteFile(File lfile, File remoteDir, FileType filetype) {
+	public static File getRemoteFile(File lfile, File localDir, File remoteDir, FileType filetype) {
 		String filename = lfile.getName();
 		String lfilepath = lfile.getAbsolutePath();
 		String remoteDirname = remoteDir.getAbsolutePath();
@@ -169,19 +165,32 @@ public class FileFactory {
 			}
 			break;
 		case QCFile:
-			rfilepath = remoteDirname + "\\project_QC\\" + lfile.getParentFile().getName() + "\\RAWData\\" + lfile.getName();
+			String QCdir = "";
+			File tempfile = lfile.getParentFile();
+			while (true) {
+				String parentname = tempfile.getName();
+				if (!parentname.endsWith("_QC")) {
+					QCdir = parentname + "\\" + QCdir;
+					tempfile = tempfile.getParentFile();
+				}else {
+					QCdir = parentname + "\\" + QCdir;
+					break;
+				}
+			}
+			rfilepath = remoteDirname + "\\project_QC\\" + QCdir + "\\RAWData\\" + lfile.getName();
 			break;
 		case processFile:
-			String processingtype = lfile.getParentFile().getName();
-			if (gm.find() && lfilepath.contains("group")) {
-				String groupname = lfile.getParentFile().getParentFile().getName();
-				String projectname = lfile.getParentFile().getParentFile().getParentFile().getName();
-				rfilepath = remoteDirname + "\\" + projectname + "\\" + groupname + "\\" + processingtype + "\\" + filename;
-			}else {
-				File projectfile = lfile.getParentFile().getParentFile();
-				String projectname = projectfile.getName();
-				rfilepath = remoteDirname + "\\" + projectname + "\\" + processingtype + "\\" + filename;
-			}
+			rfilepath = lfilepath.replace(localDir.getAbsolutePath(), remoteDir.getAbsolutePath());
+//			String processingtype = lfile.getParentFile().getName();
+//			if (gm.find() && lfilepath.contains("group")) {
+//				String groupname = lfile.getParentFile().getParentFile().getName();
+//				String projectname = lfile.getParentFile().getParentFile().getParentFile().getName();
+//				rfilepath = remoteDirname + "\\" + projectname + "\\" + groupname + "\\" + processingtype + "\\" + filename;
+//			}else {
+//				File projectfile = lfile.getParentFile().getParentFile();
+//				String projectname = projectfile.getName();
+//				rfilepath = remoteDirname + "\\" + projectname + "\\" + processingtype + "\\" + filename;
+//			}
 			break;
 		default:
 			break;
