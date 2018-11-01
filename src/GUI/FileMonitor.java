@@ -10,7 +10,8 @@ import java.text.SimpleDateFormat;
 import javax.swing.JTextPane;
 import javax.swing.text.BadLocationException;
 
-import monitor.*;
+import org.apache.commons.io.monitor.FileAlterationMonitor;
+import org.apache.commons.io.monitor.FileAlterationObserver;
 
 /**
  * 
@@ -30,7 +31,7 @@ public class FileMonitor {
 	private FileFilter processingfilefilter;
 	private FileAlterationMonitor filemonitor;
 	private JTextPane logtxt;
-	private SimpleDateFormat df = new SimpleDateFormat("YYYY-MM-dd HH:mm:ss");
+	private static final SimpleDateFormat df = new SimpleDateFormat("YYYY-MM-dd HH:mm:ss");
 	
 	
 	public FileMonitor(String localfile, String remotefile, String processingfile, long monitortimeout, long fileChangeCheckTimeout, JTextPane logtxt) {
@@ -47,10 +48,10 @@ public class FileMonitor {
 		this.processingfilefilter = new RAWDataFileFilter();
 		this.filemonitor = new FileAlterationMonitor(this.monitortimeout*1000);
 		LocalFileListener filelistener = new LocalFileListener(this.localfile, this.remotefile, this.fileChangeCheckTimeout, this.logtxt);
-		FileAlterationObserver fileobserver = new FileAlterationObserver(this.localfile, this.fileChangeCheckTimeout);
+		FileAlterationObserver fileobserver = new FileAlterationObserver(this.localfile);
 		fileobserver.addListener(filelistener);
-		ProcessingFileListener processingfilelistener = new ProcessingFileListener(this.processingfile, this.remotefile, this.fileChangeCheckTimeout, this.logtxt);
-		FileAlterationObserver processingfileobserver = new FileAlterationObserver(this.processingfile, this.processingfilefilter, this.fileChangeCheckTimeout);
+		ProcessingFileListener processingfilelistener = new ProcessingFileListener(this.processingfile, this.remotefile, this.logtxt);
+		FileAlterationObserver processingfileobserver = new FileAlterationObserver(this.processingfile, this.processingfilefilter);
 		processingfileobserver.addListener(processingfilelistener);
 		this.filemonitor.addObserver(fileobserver);
 		this.filemonitor.addObserver(processingfileobserver);

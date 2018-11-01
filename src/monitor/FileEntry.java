@@ -87,13 +87,6 @@ public class FileEntry implements Serializable {
         //this.lastModified = file.lastModified();
     }
     
-    public void initiate(){
-    	this.exists = this.file.exists();
-    	this.directory = this.file.isDirectory();
-    	this.length = this.file.length();
-    	this.lastModified = this.file.lastModified();
-    }
-
     /**
      * Refresh the attributes from the {@link File}, indicating
      * whether the file has changed.

@@ -2,8 +2,8 @@ package GUI;
 
 import java.io.File;
 import javax.swing.JTextPane;
-import monitor.FileAlterationListener;
-import monitor.FileAlterationObserver;
+import org.apache.commons.io.monitor.FileAlterationListener;
+import org.apache.commons.io.monitor.FileAlterationObserver;
 import monitor.FileEntry;
 
 /**
@@ -18,16 +18,15 @@ public class ProcessingFileListener implements FileAlterationListener {
 	
 	private File processFile;
 	private File remoteFile;
-	private long timeout;
+	private long timeout = 5;
 	private JTextPane logtxt;
 
-	public ProcessingFileListener (String processFile, String remoteFile, long timeout, JTextPane logtxt) {
-		this(new File(processFile), new File(remoteFile), timeout, logtxt);
+	public ProcessingFileListener (String processFile, String remoteFile,  JTextPane logtxt) {
+		this(new File(processFile), new File(remoteFile), logtxt);
 	}
-	public ProcessingFileListener (File processFile, File remoteFile, long timeout, JTextPane logtxt) {
+	public ProcessingFileListener (File processFile, File remoteFile,  JTextPane logtxt) {
 		this.processFile = processFile;
 		this.remoteFile = remoteFile;
-		this.timeout = timeout;
 		this.logtxt = logtxt;
 	}
 	
@@ -78,7 +77,7 @@ public class ProcessingFileListener implements FileAlterationListener {
 		
 		if (remotefile.exists()) {
 			while (true) {
-				if (!fileEntry.refresh(file, this.timeout)) {
+				if (!fileEntry.refresh(file, timeout)) {
 					FileFactory.copyFile(file, remotefile, logtxt);
 					break;
 				}

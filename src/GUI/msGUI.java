@@ -341,7 +341,7 @@ public class msGUI {
 		String season = localfile.getName();
 		String year = localfile.getParentFile().getName();
 		File remotefile = new File(remotedir + "\\" + year + "\\" + season);
-		File processfile = new File(processdir + "\\" + year + "\\" + season);
+		File processfile = new File(processdir);
 		
 		if (!remotefile.exists()) {
 			remotefile.mkdirs();

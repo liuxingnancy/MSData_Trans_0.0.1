@@ -23,6 +23,8 @@ import org.apache.commons.io.FileUtils;
 
 public class FileFactory {
 	
+	private static final SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+	
 	private FileFactory() {
 		
 	}
@@ -41,53 +43,40 @@ public class FileFactory {
 	}
 	
 	public static void copyFile(File localfile, File remotefile, JTextPane logtxt) {
-	
+		String loginfo = "";
 		try {
 			FileUtils.copyFile(localfile, remotefile);
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-		verifyCopy(localfile, remotefile, logtxt);
-	}
-	
-	
-	public static void verifyCopy(File localfile, File remotefile, JTextPane logtxt) {
-		
-		SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-		String loginfo="";
-
-		boolean copysuccess = fileEqual(localfile, remotefile);
-		int times=0;
-		if(copysuccess) {
 			loginfo = df.format(new Date()) + " Copy succeessfully! Copy the new file: " + localfile.getAbsolutePath() + "\n";
 			try {
 				logtxt.getDocument().insertString(0, loginfo, logtxt.getStyle("normal"));
 			} catch (BadLocationException e) {
 				e.printStackTrace();
 			}
-		}
-		while(!copysuccess) {
-			times++;
-			loginfo = df.format(new Date())+ " Copy failed ! Try copy again for " + String.valueOf(times) + " times " + localfile.getAbsoluteFile() +  " \n";
-			try {
-				logtxt.getDocument().insertString(0, loginfo, logtxt.getStyle("red"));
-			} catch (BadLocationException e) {
-				e.printStackTrace();
-			}
-			remotefile.delete();
-			try {
-				FileUtils.copyFile(localfile, remotefile);
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-			if (times>=3) {
-				loginfo = df.format(new Date()) + " Copy failed for 3 times!!! Please check it by hand. \n";
+		} catch(IOException e) {
+			int times =0;
+			while(times<3) {
+				times++;
+				loginfo = df.format(new Date())+ " Copy failed ! Try copy again for " + String.valueOf(times) + " times " + localfile.getAbsoluteFile() +  " \n";
 				try {
 					logtxt.getDocument().insertString(0, loginfo, logtxt.getStyle("red"));
-				} catch (BadLocationException e) {
-					e.printStackTrace();
+				} catch (BadLocationException e1) {
+					e1.printStackTrace();
 				}
-				break;
+				remotefile.delete();
+					try {
+					FileUtils.copyFile(localfile, remotefile);
+				} catch (IOException e2) {
+					e2.printStackTrace();
+				}
+				if (times==3) {
+					loginfo = df.format(new Date()) + " Copy failed for 3 times!!! Please check it by hand. \n";
+					try {
+						logtxt.getDocument().insertString(0, loginfo, logtxt.getStyle("red"));
+					} catch (BadLocationException e3) {
+						e3.printStackTrace();
+					}
+					break;
+				}
 			}
 		}
 	}
@@ -97,8 +86,18 @@ public class FileFactory {
 		SimpleDateFormat fdf = new SimpleDateFormat("YYYYMMdd");
 		SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 		String loginfo="";
-		
-		String filterdirname = remotefile.getParent() + "\\filter";
+		File tmpdir = remotefile.getParentFile();
+		String projectDirName = tmpdir.getParent();
+		while (true) {
+			String tmpfilename = tmpdir.getName();
+			if (tmpfilename.equals("RAWdata")) {
+				projectDirName = tmpdir.getParent();
+				break;
+			}else {
+				tmpdir = tmpdir.getParentFile();
+			}
+		}
+		String filterdirname = projectDirName + "\\filter";
 		File filterdir = new File(filterdirname);
 		File filterfile = new File(filterdirname + "\\" + remotefile.getName());
 		if (filterfile.exists()) {
@@ -177,10 +176,11 @@ public class FileFactory {
 					break;
 				}
 			}
-			rfilepath = remoteDirname + "\\project_QC\\" + QCdir + "\\RAWData\\" + lfile.getName();
+			rfilepath = remoteDirname + "\\project_QC\\" + QCdir + "\\RAWdata\\" + lfile.getName();
 			break;
 		case processFile:
-			rfilepath = lfilepath.replace(localDir.getAbsolutePath(), remoteDir.getAbsolutePath());
+			String remotesub = remoteDir.getParentFile().getParent();
+			rfilepath = lfilepath.replace(localDir.getAbsolutePath(), remotesub);
 //			String processingtype = lfile.getParentFile().getName();
 //			if (gm.find() && lfilepath.contains("group")) {
 //				String groupname = lfile.getParentFile().getParentFile().getName();

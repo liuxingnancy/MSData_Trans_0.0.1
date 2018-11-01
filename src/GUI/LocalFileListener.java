@@ -2,8 +2,8 @@ package GUI;
 
 import java.io.File;
 import javax.swing.JTextPane;
-import monitor.FileAlterationListener;
-import monitor.FileAlterationObserver;
+import org.apache.commons.io.monitor.FileAlterationListener;
+import org.apache.commons.io.monitor.FileAlterationObserver;
 import monitor.FileEntry;
 
 /**
