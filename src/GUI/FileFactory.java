@@ -43,6 +43,10 @@ public class FileFactory {
 	}
 	
 	public static void copyFile(File localfile, File remotefile, JTextPane logtxt) {
+		copyFile(localfile, remotefile, logtxt, 0);
+	}
+	
+	private static void copyFile(File localfile, File remotefile, JTextPane logtxt, int times) {
 		String loginfo = "";
 		try {
 			FileUtils.copyFile(localfile, remotefile);
@@ -53,8 +57,7 @@ public class FileFactory {
 				e.printStackTrace();
 			}
 		} catch(IOException e) {
-			int times =0;
-			while(times<3) {
+			if (times <3) {
 				times++;
 				loginfo = df.format(new Date())+ " Copy failed ! Try copy again for " + String.valueOf(times) + " times " + localfile.getAbsoluteFile() +  " \n";
 				try {
@@ -63,20 +66,14 @@ public class FileFactory {
 					e1.printStackTrace();
 				}
 				remotefile.delete();
-					try {
-					FileUtils.copyFile(localfile, remotefile);
-				} catch (IOException e2) {
+				copyFile(localfile, remotefile, logtxt, times);
+			}else if (times==3) {
+				loginfo = df.format(new Date()) + " Copy failed for 3 times!!! Please check it by hand. \n";
+				try {
+					logtxt.getDocument().insertString(0, loginfo, logtxt.getStyle("red"));
+				} catch (BadLocationException e2) {
 					e2.printStackTrace();
-				}
-				if (times==3) {
-					loginfo = df.format(new Date()) + " Copy failed for 3 times!!! Please check it by hand. \n";
-					try {
-						logtxt.getDocument().insertString(0, loginfo, logtxt.getStyle("red"));
-					} catch (BadLocationException e3) {
-						e3.printStackTrace();
-					}
-					break;
-				}
+				}	
 			}
 		}
 	}
